@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Shadowrocket → v2rayN 转换器</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+    textarea { width: 100%; padding: 10px; margin: 10px 0; font-size: 14px; }
+    button { padding: 8px 16px; margin: 5px 5px 15px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h2>🧊 Shadowrocket 节点 JSON → v2rayN 可用链接</h2>
+  
+  <label>粘贴 Shadowrocket 导出的节点 JSON：</label>
+  <textarea id="input" rows="12" placeholder='粘贴 Shadowrocket 分享出来的 JSON'></textarea>
+
+  <div>
+    <button onclick="convert()">转换</button>
+    <button onclick="copyResult()">复制结果</button>
+    <button onclick="clearAll()">清空</button>
+  </div>
+
+  <label>转换后的链接：</label>
+  <textarea id="output" rows="3" readonly></textarea>
+
+  <script>
+    function convert() {
+      const raw = document.getElementById("input").value.trim();
+      if (!raw) return alert("请输入 JSON 配置");
+
+      try {
+        const data = JSON.parse(raw);
+        let result = "";
+
+        const type = (data.type || "").toLowerCase();
+
+        if (type === "vmess") {
+          const config = {
+            v: "2",
+            ps: data.title || data.ps || "vmess-node",
+            add: data.host || data.add || "",
+            port: data.port || "",
+            id: data.uuid || data.id || "",
+            aid: data.alterId || "0",
+            net: data.obfs === "websocket" ? "ws" : "tcp",
+            type: "none",
+            host: data.obfsParam || data.host || "",
+            path: data.path || "",
+            tls: data.tls ? "tls" : ""
+          };
+
+          const json = JSON.stringify(config);
+          const base64 = btoa(unescape(encodeURIComponent(json)));
+          result = "vmess://" + base64;
+
+        } else if (type === "vless") {
+          const uuid = data.uuid || ""; // 正确使用 uuid
+          const host = data.host || "";
+          const port = data.port || "";
+          const peer = data.peer || host;
+          const publicKey = data.publicKey || "";
+          const shortId = data.shortId || "";
+          const title = data.title || "vless-node";
+
+          const query = [
+            "encryption=none",
+            "security=reality",
+            "type=none",
+            "headerType=none",
+            "fp=chrome",
+            publicKey ? "pbk=" + encodeURIComponent(publicKey) : "",
+            shortId ? "sid=" + encodeURIComponent(shortId) : "",
+            peer ? "sni=" + encodeURIComponent(peer) : "",
+            (publicKey && shortId) ? "flow=xtls-rprx-vision" : ""
+          ].filter(Boolean).join("&");
+
+          result = `vless://${uuid}@${host}:${port}?${query}#${encodeURIComponent(title)}`;
+
+        } else {
+          alert("暂不支持的类型：" + type);
+          return;
+        }
+
+        document.getElementById("output").value = result;
+
+      } catch (e) {
+        alert("无效的 JSON，解析失败！");
+      }
+    }
+
+    function copyResult() {
+      const output = document.getElementById("output");
+      if (!output.value) return alert("没有可复制的内容");
+      output.select();
+      document.execCommand("copy");
+      alert("已复制");
+    }
+
+    function clearAll() {
+      document.getElementById("input").value = "";
+      document.getElementById("output").value = "";
+    }
+  </script>
+</body>
+</html>
