@@ -55,7 +55,7 @@
           result = "vmess://" + base64;
 
         } else if (type === "vless") {
-          const uuid = data.password || data.uuid || ""; // ✅ 优先取 password
+          const uuid = data.password || ""; // ✅ 优先取 password
           const host = data.host || "";
           const port = data.port || "";
           const peer = data.peer || host;
